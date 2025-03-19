@@ -41,7 +41,3 @@ Reemplazar `/dev/sdX` con la unidad correcta.
 
 ## Documentación
 La documentación en formato IEEE está en `2019061555-tarea1.pdf`.
-
-## Repositorio
-El código y la documentación están en:
-[https://github.com/miguel712000/booting-radio-spell](https://github.com/miguel712000/booting-radio-spell)
