@@ -1,0 +1,133 @@
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{listings}  % Paquete para formatear código
+
+% Configuración de lstlisting para ajustar texto largo
+\lstset{
+    basicstyle=\ttfamily\small,
+    breaklines=true,
+    frame=single,
+    captionpos=b
+}
+
+\begin{document}
+
+\title{Desarrollo de un Programa en Ensamblador para el Aprendizaje del Alfabeto Fonético}
+
+\author{\IEEEauthorblockN{Miguel David Sánchez Sánchez}
+\IEEEauthorblockA{Ingeniería en Computación \\
+Instituto Tecnológico de Costa Rica\\
+Heredia, Costa Rica \\
+miguelsanchez712000@estudiantec.cr}
+}
+
+\maketitle
+
+\begin{abstract}
+Este documento describe el desarrollo de un bootloader en ensamblador x86 que permite a los usuarios practicar el alfabeto fonético militar mediante un sistema de evaluación automática. Se detallan las herramientas utilizadas, las estructuras de datos implementadas, las instrucciones de ejecución y un análisis de las actividades realizadas durante el desarrollo. Además, se explica cómo el programa está diseñado para funcionar como el sistema de arranque de una computadora.
+\end{abstract}
+
+\begin{IEEEkeywords}
+Bootloader, Ensablador x86, BIOS Interrupts, QEMU, NASM, Alfabeto Fonético
+\end{IEEEkeywords}
+
+\section{Introducción}
+El objetivo de esta tarea es implementar un bootloader en ensamblador x86 que, ejecutado en un entorno de bajo nivel, permita a los usuarios practicar la escritura del alfabeto fonético. El sistema selecciona una letra aleatoria y solicita al usuario que la deletree correctamente. Se proporciona retroalimentación basada en la respuesta ingresada. Adicionalmente, se busca que el código funcione como un sistema de arranque para una computadora, cargándose directamente desde el sector de arranque de un disco.
+
+\section{Ambiente de Desarrollo}
+Para la implementación se utilizaron las siguientes herramientas:
+\begin{itemize}
+    \item \textbf{NASM}: Ensamblador utilizado para compilar el código fuente.
+    \item \textbf{QEMU}: Emulador utilizado para ejecutar el programa como un sistema de arranque.
+    \item \textbf{GNU/Linux (Ubuntu)}: Sistema operativo donde se desarrolló la tarea.
+    \item \textbf{Editor de texto (VS Code, Vim)}: Para la escritura y edición del código.
+    \item \textbf{GitHub}: Plataforma utilizada para el control de versiones y almacenamiento del código.
+\end{itemize}
+
+El código fuente del proyecto está disponible en el siguiente repositorio de GitHub:
+\begin{lstlisting}
+https://github.com/miguel712000/booting-radio-spell
+\end{lstlisting}
+
+\section{Estructuras de Datos y Funciones}
+Las principales estructuras utilizadas en el código son:
+\begin{itemize}
+    \item \textbf{Tabla de Letras}: Contiene los caracteres del alfabeto.
+    \item \textbf{Tabla de Palabras Fonéticas}: Almacena los nombres fonéticos asociados a cada letra.
+    \item \textbf{Buffer de Entrada}: Almacena la respuesta ingresada por el usuario.
+\end{itemize}
+
+Las funciones principales incluyen:
+\begin{itemize}
+    \item \textbf{seleccionar\_letra}: Elige una letra aleatoria y su correspondiente palabra fonética.
+    \item \textbf{print\_puntaje}: Imprime el puntaje en la pantalla.
+    \item \textbf{leer\_teclado}: Captura la entrada del usuario.
+    \item \textbf{comparar}: Verifica si la entrada coincide con la respuesta esperada.
+    \item \textbf{print\_correcto / print\_incorrecto}: Muestran mensajes de validación de la respuesta.
+\end{itemize}
+
+\section{Instrucciones de Ejecución}
+Para compilar y ejecutar el programa como un bootloader:
+\begin{lstlisting}
+$ nasm -f bin boot.asm -o boot.bin
+$ qemu-system-x86_64 -drive format=raw,file=boot.bin
+\end{lstlisting}
+
+Para probar el sistema en una unidad USB:
+\begin{lstlisting}
+$ sudo dd if=boot.bin of=/dev/sdX bs=512 count=1
+\end{lstlisting}
+\textbf{Nota:} Reemplazar \texttt{/dev/sdX} por el identificador correcto de la unidad USB.
+
+Presionar ESC en cualquier momento cerrará el programa.
+
+\section{Actividades Realizadas}
+\begin{table}[htbp]
+    \centering
+    \begin{tabular}{|c|l|c|}
+        \hline
+        \textbf{Fecha} & \textbf{Actividad} & \textbf{Horas} \\
+        \hline
+        10/03/2024 & Configuración de entorno y prueba en QEMU & 3 \\
+        11/03/2024 & Implementación de selección de letras & 4 \\
+        12/03/2024 & Manejo de entrada de usuario y comparación & 5 \\
+        13/03/2024 & Depuración y solución de errores & 6 \\
+        14/03/2024 & Configuración como bootloader y pruebas en USB & 5 \\
+        15/03/2024 & Documentación y revisión final & 4 \\
+        \hline
+    \end{tabular}
+    \caption{Registro de actividades y tiempos de desarrollo.}
+\end{table}
+
+\section{Autoevaluación}
+El programa cumple con los requerimientos propuestos, permitiendo la selección aleatoria de letras y validación de respuestas. Además, se logró implementar correctamente como un bootloader, cargándose en el sector de arranque de un disco y ejecutándose en QEMU sin sistema operativo. 
+
+Sin embargo, durante las pruebas en hardware real, se identificó que algunas configuraciones de BIOS modernas no permiten la ejecución de código de arranque en modo MBR sin ajustes específicos. Se intentó habilitar el modo Legacy Boot y desactivar Secure Boot, pero la incompatibilidad persistió en algunas configuraciones de hardware. Se realizaron múltiples intentos de escritura del MBR y verificación del contenido con `hexdump`, confirmando que el código estaba correctamente almacenado, pero ciertas restricciones del BIOS impidieron su ejecución.
+
+El control de versiones fue gestionado en GitHub, permitiendo un seguimiento de los cambios y mejoras a lo largo del desarrollo.
+
+En la rúbrica de evaluación, el proyecto recibiría una calificación alta en funcionalidad y documentación, con margen de mejora en optimización del código y compatibilidad con hardware moderno.
+
+\section{Lecciones Aprendidas}
+\begin{itemize}
+    \item La importancia de verificar el rango de valores en cálculos aleatorios.
+    \item Manejo eficiente de interrupciones de BIOS para entrada y salida de datos.
+    \item Conceptos fundamentales sobre el arranque de sistemas y el uso de bootloaders.
+    \item Limitaciones de hardware y configuraciones de BIOS modernas en el arranque de MBR.
+\end{itemize}
+
+\section{Bibliografía}
+\begin{thebibliography}{00}
+    \bibitem{b1} NASM Documentation, "Netwide Assembler Manual", 2023.
+    \bibitem{b2} QEMU Official Documentation, 2023.
+    \bibitem{b3} Tanenbaum, A. "Structured Computer Organization", Pearson, 2012.
+\end{thebibliography}
+
+\end{document}

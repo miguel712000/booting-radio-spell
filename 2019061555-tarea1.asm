@@ -9,7 +9,7 @@ start:
     call leer_teclado
 
     mov si, buffer            ; Comparar con la respuesta correcta
-    mov di, [respuesta]
+    mov di, [respuesta]       ; Obtener dirección de la respuesta almacenada
     call comparar
 
     cmp al, 1                 ; Verificar si la respuesta es correcta
@@ -23,25 +23,25 @@ correcto:
 
 repetir:
     call print_puntaje        ; Mostrar puntaje actualizado
-    jmp start                 ; Reiniciar
+    jmp start                 ; Reiniciar juego
 
 ; ---------------------- Funciones ---------------------- ;
 
 seleccionar_letra:
     mov ah, 0x00              ; Obtener tiempo del reloj BIOS
-    int 0x1A                  
+    int 0x1A                  ; Guarda el tiempo en DX
     and dl, 0x0F              ; Limitar valores entre 0 y 15 (16 letras)
 
-    movzx bx, dl              ; Convertir a índice
+    movzx bx, dl              ; Convertir a índice dentro del rango válido
     lea si, letras
     mov al, [si + bx]         ; Seleccionar letra
-    mov [letra], al
+    mov [letra], al           ; Guardar la letra seleccionada
 
-    lea si, palabras          ; Obtener la palabra fonética
-    shl bx, 1                 
-    add si, bx                
-    mov si, [si]              
-    mov [respuesta], si       
+    lea si, palabras          ; Obtener la palabra fonética correspondiente
+    shl bx, 1                 ; Multiplicar BX por 2 (cada dirección ocupa 2 bytes)
+    add si, bx                ; Sumar el desplazamiento a SI
+    mov si, [si]              ; Cargar la dirección de la palabra fonética en SI
+    mov [respuesta], si       ; Guardar dirección en `respuesta`
 
     ret
 
@@ -50,13 +50,13 @@ print_puntaje:
     call print_texto
 
     mov al, [puntaje]  
-    add al, '0'          ; Convertir a ASCII ('0' - '9')
-    cmp al, '9'          ; Si pasa de '9', resetearlo
+    add al, '0'          ; Convertir el número a ASCII ('0' - '9')
+    cmp al, '9'          ; Si el puntaje es mayor a '9', fijarlo en '9'
     jbe .imprime
-    mov al, '9'          ; Mantenerlo en '9' si excede
+    mov al, '9'          ; Mantenerlo en '9' si excede el límite
 
     .imprime:
-        mov ah, 0x0E
+        mov ah, 0x0E     ; BIOS: imprimir carácter en pantalla
         int 0x10             
         mov si, msg_nueva_linea
         call print_texto
@@ -76,19 +76,19 @@ print_string:
 print_texto:
     mov ah, 0x0E
 .loop:
-    lodsb
-    test al, al
+    lodsb                  ; Cargar siguiente carácter en AL
+    test al, al            ; Verificar si es un carácter nulo (fin de cadena)
     jz done
-    int 0x10
+    int 0x10               ; Imprimir carácter en pantalla
     jmp .loop
 done:
     ret
 
 print_char:
     mov ah, 0x0E
-    mov al, [si]
+    mov al, [si]           ; Cargar carácter desde la dirección SI
     int 0x10
-    mov al, ' '  ; Agregar espacio después de la letra
+    mov al, ' '            ; Agregar espacio después de la letra
     int 0x10
     ret
 
@@ -96,48 +96,48 @@ leer_teclado:
     mov si, buffer
 .lee:
     mov ah, 0x00
-    int 0x16
+    int 0x16               ; BIOS: leer tecla presionada
 
-    cmp al, 27      ; ESC → Salir
+    cmp al, 27             ; ESC → Salir del programa
     je salir
 
-    cmp al, 13      ; ENTER → Terminar entrada
+    cmp al, 13             ; ENTER → Finalizar entrada del usuario
     je fin_lectura
 
-    mov [si], al
-    inc si
-    mov ah, 0x0E
+    mov [si], al           ; Guardar carácter ingresado en el buffer
+    inc si                 ; Avanzar en el buffer
+    mov ah, 0x0E           ; BIOS: imprimir carácter en pantalla
     int 0x10
-    jmp .lee
+    jmp .lee               ; Seguir leyendo teclas
 
 salir:
     mov si, msg_salir
     call print_texto
-    mov ax, 0x5307
+    mov ax, 0x5307         ; Solicitar apagado con APM (Advanced Power Management)
     mov bx, 0x0001
     mov cx, 0x0003
-    int 0x15         ; Apagar el sistema
+    int 0x15               ; BIOS: Ejecutar llamada para apagar sistema
 
 fin_lectura:
-    mov byte [si], 0  ; Finalizar cadena con 0
+    mov byte [si], 0       ; Finalizar cadena con un carácter nulo
     ret
 
 comparar:
 .loop:
-    mov al, [si]      
-    mov bl, [di]      
-    cmp al, bl        
+    mov al, [si]           ; Cargar carácter de la entrada
+    mov bl, [di]           ; Cargar carácter de la respuesta correcta
+    cmp al, bl             ; Comparar ambos caracteres
     jne fallo
-    test al, al
+    test al, al            ; Verificar si se llegó al final de la cadena
     jz exito
     inc si
     inc di
     jmp .loop
 fallo:
-    mov al, 0
+    mov al, 0              ; Indicar que la respuesta es incorrecta
     ret
 exito:
-    mov al, 1
+    mov al, 1              ; Indicar que la respuesta es correcta
     ret
 
 print_correcto:
@@ -160,9 +160,9 @@ print_incorrecto:
 
 ; ---------------------- Datos ---------------------- ;
 
-puntaje db 0              ; Contador de puntaje
-letra db 0                ; Letra seleccionada
-respuesta dw 0            ; Dirección de la respuesta fonética
+puntaje db 0              ; Contador de puntaje del usuario
+letra db 0                ; Letra seleccionada al azar
+respuesta dw 0            ; Dirección de la respuesta fonética almacenada
 
 letras db "ABCDEFGHIJKLMNOP"  
 
@@ -194,7 +194,7 @@ msg_salir db "Saliendo... ", 0
 msg_nueva_linea db 0x0D, 0x0A, 0
 msg_linea_divisoria db "---------",0x0D, 0x0A, 0
 
-buffer times 20 db 0  ; Buffer para la entrada del usuario
+buffer times 20 db 0  ; Espacio reservado para la entrada del usuario
 
 times 510-($-$$) db 0
-dw 0xAA55
+dw 0xAA55            ; Firma de arranque (Boot Signature)
